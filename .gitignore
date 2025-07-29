@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Private app config ###
+src/main/resources/private/private_application.properties

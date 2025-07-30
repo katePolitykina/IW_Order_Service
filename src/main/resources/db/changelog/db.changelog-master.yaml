@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: changeset/v1/v1-create-items-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changeset/v1/v1-create-order-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changeset/v1/v1-create-order-items-table.yaml
+      relativeToChangelogFile: true

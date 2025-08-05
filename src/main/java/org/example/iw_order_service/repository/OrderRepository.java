@@ -13,8 +13,6 @@ import java.util.stream.Stream;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Stream<Order> findAllByIdIn(List<Long> ids);
     Stream<Order> findAllByStatusIn(List<OrderStatus> statuses);
-    default Optional<Order> update(Order input) {
-        return Optional.of(save(input));
-    }
+
 
 }

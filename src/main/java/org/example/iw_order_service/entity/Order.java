@@ -1,7 +1,9 @@
 package org.example.iw_order_service.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.example.iw_order_service.entity.enums.OrderStatus;
 
 import java.time.LocalDateTime;
@@ -10,6 +12,8 @@ import java.util.List;
 @Entity
 @Table(name = "orders")
 @RequiredArgsConstructor
+@Getter
+@Setter
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -82,7 +82,7 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    @PreAuthorize("hasRole('ROLE_iw.admin')")
+    @PreAuthorize("hasRole('iw.admin')")
     public OrderResponse updateOrderStatus(UpdateOrderRequest request) {
 
         Order order = orderRepository.findById(request.getOrderId())

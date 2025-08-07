@@ -21,6 +21,10 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven {
+        name = "SonatypeOSS"
+        url = "https://s01.oss.sonatype.org/content/repositories/releases/"
+    }
 }
 
 dependencies {
@@ -31,6 +35,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:postgresql'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
@@ -40,6 +47,7 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation "org.wiremock:wiremock-jetty12:3.13.1"
 }
 
 tasks.named('test') {

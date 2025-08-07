@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import org.example.iw_order_service.entity.Order;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,7 @@ public class OrderService {
             order.getOrderItems().add(orderItem);
         }
         order.setStatus(OrderStatus.PENDING);
+        order.setCreationDate(LocalDateTime.now());
         order = orderRepository.save(order);
         return orderMapper.toOrderResponse(order,userInfo);
     }

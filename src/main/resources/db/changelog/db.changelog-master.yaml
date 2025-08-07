@@ -11,3 +11,6 @@ databaseChangeLog:
   - include:
       file: changeset/v2/v2-add-status-and-index-to-orders.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changeset/v3/v3-add-autoincrement-to-orders.yaml
+      relativeToChangelogFile: true

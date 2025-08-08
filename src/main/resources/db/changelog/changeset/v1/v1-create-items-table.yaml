@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-items-table
+      author: katapalk
+      changes:
+        - createTable:
+            tableName: items
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_items_price
+            tableName: items
+            columns:
+              - column:
+                  name: price

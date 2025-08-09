@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import jakarta.transaction.Transactional;
 import org.example.iw_order_service.IwOrderServiceApplication;
 import org.example.iw_order_service.dto.*;
@@ -31,7 +32,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
@@ -44,7 +44,11 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {IwOrderServiceApplication.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+        classes = {IwOrderServiceApplication.class},
+        properties = {
+                "server.port=8082"
+        })
 @WireMockTest
 @AutoConfigureMockMvc
 @Testcontainers
@@ -62,6 +66,11 @@ public class OrderControllerTest {
     private ObjectMapper objectMapper;
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
+    @Container
+    static KeycloakContainer keycloak = new KeycloakContainer("quay.io/keycloak/keycloak:26.3")
+            .withBootstrapAdminDisabled()
+            .withRealmImportFile("/realm-export.json");
+
     @Autowired
     private OrderRepository orderRepository;
     
@@ -88,6 +97,14 @@ public class OrderControllerTest {
 
     @DynamicPropertySource
     public static void setUpMockBaseUrl(DynamicPropertyRegistry registry) {
+
+        registry.add("spring.security.oauth2.client.registration.keycloak.client-id", () -> "iw-order-service");
+        registry.add("spring.security.oauth2.client.registration.keycloak.client-secret", () -> "**********");
+        registry.add("spring.security.oauth2.client.registration.keycloak.client-name", ()-> "iw-order-service");
+        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri",
+                () -> keycloak.getAuthServerUrl() + "/realms/iw_payment_app");
+        registry.add("spring.security.oauth2.client.provider.keycloak.token-uri", () -> keycloak.getAuthServerUrl() + "/realms/iw_payment_app"+ "/protocol/openid-connect/token");
+
         registry.add("service.userservice.url", userServiceWM::baseUrl);
 
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
@@ -342,7 +359,7 @@ public class OrderControllerTest {
 
     private void stubUserByEmail () throws JsonProcessingException {
         userServiceWM.stubFor(
-                WireMock.get(WireMock.urlPathEqualTo("/api/v1.0/users/internal"))
+                WireMock.get(WireMock.urlPathEqualTo("/api/v1.0/users/internal/by-email"))
                         .withQueryParam("email", WireMock.equalTo(testUser.getEmail()))
                         .willReturn(aResponse()
                                 .withStatus(200)
@@ -352,7 +369,7 @@ public class OrderControllerTest {
     }
     private void stubUserById() throws JsonProcessingException {
         userServiceWM.stubFor(
-                WireMock.get(WireMock.urlPathEqualTo("/api/v1.0/users/internal"))
+                WireMock.get(WireMock.urlPathEqualTo("/api/v1.0/users/internal/by-id"))
                         .withQueryParam("id", WireMock.equalTo(testUser.getId().toString()))
                         .willReturn(aResponse()
                                 .withStatus(200)

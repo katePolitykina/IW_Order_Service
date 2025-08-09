@@ -11,6 +11,7 @@ on:
 jobs:
   build-and-analyze:
     name: Build & SonarQube Analysis
+    environment: base
     runs-on: ubuntu-latest
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}

@@ -342,7 +342,7 @@ public class OrderControllerTest {
 
     private void stubUserByEmail () throws JsonProcessingException {
         userServiceWM.stubFor(
-                WireMock.get(WireMock.urlPathEqualTo("/api/internal/v1.0/users/internal"))
+                WireMock.get(WireMock.urlPathEqualTo("/api/v1.0/users/internal"))
                         .withQueryParam("email", WireMock.equalTo(testUser.getEmail()))
                         .willReturn(aResponse()
                                 .withStatus(200)
@@ -352,7 +352,7 @@ public class OrderControllerTest {
     }
     private void stubUserById() throws JsonProcessingException {
         userServiceWM.stubFor(
-                WireMock.get(WireMock.urlPathEqualTo("/api/internal/v1.0/users/internal"))
+                WireMock.get(WireMock.urlPathEqualTo("/api/v1.0/users/internal"))
                         .withQueryParam("id", WireMock.equalTo(testUser.getId().toString()))
                         .willReturn(aResponse()
                                 .withStatus(200)

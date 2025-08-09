@@ -26,7 +26,7 @@ public class UserServiceClient {
     public UserResponse getUserByEmail(String email) {
 
         String url = UriComponentsBuilder
-                .fromUriString(userServiceUrl + "/api/internal/v1.0/users/internal")
+                .fromUriString(userServiceUrl + "/api/v1.0/users/internal/by-email")
                 .queryParam("email", email)
                 .toUriString();
 
@@ -36,7 +36,7 @@ public class UserServiceClient {
     public UserResponse getUserById(Long id) {
 
         String url = UriComponentsBuilder
-                .fromUriString(userServiceUrl + "/api/internal/v1.0/users/internal")
+                .fromUriString(userServiceUrl + "/api/v1.0/users/internal/by-id")
                 .queryParam("id", id)
                 .toUriString();
         return performGetUser(url);

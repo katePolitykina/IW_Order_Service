@@ -18,7 +18,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UserServiceClient {
 
     private final RestTemplate restTemplate;
-    private final KeycloakTokenClient tokenClient;
 
     @Value("${service.userservice.url}")
     private String userServiceUrl;
@@ -43,14 +42,9 @@ public class UserServiceClient {
     }
 
     private UserResponse performGetUser(String url) {
-        String token = tokenClient.getAccessToken();
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         HttpEntity<Void> request = new HttpEntity<>(headers);
-
-
         try {
             ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,

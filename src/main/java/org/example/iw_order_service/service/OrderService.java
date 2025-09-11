@@ -7,6 +7,7 @@ import org.example.iw_order_service.dto.*;
 import org.example.iw_order_service.entity.Item;
 import org.example.iw_order_service.entity.OrderItem;
 import org.example.iw_order_service.entity.enums.OrderStatus;
+import org.example.iw_order_service.exception.ForbiddenException;
 import org.example.iw_order_service.exception.InvalidStatusTransitionException;
 import org.example.iw_order_service.exception.ItemNotFoundException;
 import org.example.iw_order_service.exception.OrderNotFoundException;
@@ -14,11 +15,7 @@ import org.example.iw_order_service.mapper.OrderItemMapper;
 import org.example.iw_order_service.mapper.OrderMapper;
 import org.example.iw_order_service.repository.ItemRepository;
 import org.example.iw_order_service.repository.OrderRepository;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.example.iw_order_service.security.SecurityService;
 import org.springframework.stereotype.Service;
 
 import org.example.iw_order_service.entity.Order;
@@ -38,11 +35,9 @@ public class OrderService {
     private final UserServiceClient userServiceClient;
     private final OrderItemMapper orderItemMapper;
     private final OrderMapper orderMapper;
-
+    private final SecurityService securityService;
     public OrderResponse createOrder(CreateOrderRequest request) {
-        Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String userEmail = jwt.getClaimAsString("email");
-        UserResponse userInfo = userServiceClient.getUserByEmail(userEmail);
+        UserResponse userInfo = userServiceClient.getUserById(securityService.getCurrentUserId());
         Order order = new Order();
         order.setUserId(userInfo.getId());
         for (OrderItemRequest itemRequest : request.getItems()) {
@@ -60,7 +55,7 @@ public class OrderService {
     public OrderResponse getOrder(Long orderId) {
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found or access denied: " + orderId));
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         UserResponse userInfo = userServiceClient.getUserById(order.getUserId());
         return orderMapper.toOrderResponse(order, userInfo);
     }
@@ -84,9 +79,10 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    @PreAuthorize("hasRole('iw.admin')")
     public OrderResponse updateOrderStatus(UpdateOrderRequest request) {
-
+        if (!securityService.hasRole("ROLE_iw.admin")) {
+            throw new ForbiddenException("Only admins can update order status");
+        }
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new OrderNotFoundException("Order not found or access denied: " + request.getOrderId()));
 
@@ -108,14 +104,11 @@ public class OrderService {
                 .orElseThrow(() -> new OrderNotFoundException("Order not found or access denied: " + orderId));
         UserResponse userInfo = userServiceClient.getUserById(order.getUserId());
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        var roles = jwt.getClaimAsStringList("roles");
-        boolean isAdmin = roles != null && roles.contains("ROLE_iw.admin");
-        boolean isOwner = jwt.getClaimAsString("email").equals(userInfo.getEmail());
+        boolean isAdmin = securityService.hasRole("ROLE_iw.admin");
+        boolean isOwner = securityService.getCurrentUserId().equals(userInfo.getId());
 
         if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException("You are not allowed to delete this order.");
+            throw new ForbiddenException("Only admins can update order status");
         }
 
         if (order.getStatus() != OrderStatus.PENDING) {

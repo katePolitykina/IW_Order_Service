@@ -23,21 +23,21 @@ public class UserServiceClient {
     @Value("${service.userservice.url}")
     private String userServiceUrl;
 
-    public UserResponse getUserByEmail(String email) {
-
-        String url = UriComponentsBuilder
-                .fromUriString(userServiceUrl + "/api/v1.0/users/internal/by-email")
-                .queryParam("email", email)
-                .toUriString();
-
-        return performGetUser(url);
-    }
+//    public UserResponse getUserByEmail(String email) {
+//
+//        String url = UriComponentsBuilder
+//                .fromUriString(userServiceUrl + "/api/v1.0/users/by-email")
+//                .queryParam("email", email)
+//                .toUriString();
+//
+//        return performGetUser(url);
+//    }
 
     public UserResponse getUserById(Long id) {
 
         String url = UriComponentsBuilder
-                .fromUriString(userServiceUrl + "/api/v1.0/users/internal/by-id")
-                .queryParam("id", id)
+                .fromUriString(userServiceUrl + "/api/v1.0/users/{id}")
+                .buildAndExpand(id)
                 .toUriString();
         return performGetUser(url);
     }

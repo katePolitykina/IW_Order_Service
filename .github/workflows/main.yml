@@ -1,0 +1,93 @@
+name: CI with Gradle, SonarQube, and Docker
+
+on:
+  push:
+    branches:
+      - main
+      - CI/CD
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-analyze:
+    name: Build & SonarQube Analysis
+    environment: base
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB_NAME: ${{ secrets.POSTGRES_DB_NAME }}
+      USERSERVICE_URL: ${{ secrets.USERSERVICE_URL }}
+      KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}
+      KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+      KEYCLOAK_CLIENT_NAME: ${{ secrets.KEYCLOAK_CLIENT_NAME }}
+      KEYCLOAK_ISSUER_URI: ${{ secrets.KEYCLOAK_ISSUER_URI }}
+      KEYCLOAK_TOKEN_URI: ${{ secrets.KEYCLOAK_TOKEN_URI }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Build and analyze
+        run: ./gradlew clean build sonar --info --no-daemon
+        
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs/*.jar
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-analyze
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            --build-arg POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --build-arg POSTGRES_DB_NAME=${{ secrets.POSTGRES_DB_NAME }} \
+            --build-arg USERSERVICE_URL=${{ secrets.USERSERVICE_URL }} \
+            --build-arg KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }} \
+            --build-arg KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }} \
+            --build-arg KEYCLOAK_CLIENT_NAME=${{ secrets.KEYCLOAK_CLIENT_NAME }} \
+            --build-arg KEYCLOAK_ISSUER_URI=${{ secrets.KEYCLOAK_ISSUER_URI }} \
+            --build-arg KEYCLOAK_TOKEN_URI=${{ secrets.KEYCLOAK_TOKEN_URI }} \
+            -t order-service:${{ github.sha }} .
+            mkdir -p docker-image
+            docker save order-service:${{ github.sha }} -o docker-image/order-service.tar
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-service-docker-image
+          path: docker-image/order-service.tar

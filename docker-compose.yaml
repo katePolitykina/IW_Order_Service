@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orderservice
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/${POSTGRES_DB_NAME}"
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+
+
+    depends_on:
+      - db
+    networks:
+      - orderservice_net
+      - iw_authenticationservice_keycloak_net
+
+  db:
+    image: postgres:latest
+    container_name: orderservice_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5435:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/order_service
+    networks:
+      - orderservice_net
+
+volumes:
+  db_data:
+
+networks:
+  orderservice_net:
+  iw_authenticationservice_keycloak_net :
+    external: true
+

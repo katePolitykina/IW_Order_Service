@@ -16,10 +16,12 @@ import org.example.iw_order_service.mapper.OrderMapper;
 import org.example.iw_order_service.repository.ItemRepository;
 import org.example.iw_order_service.repository.OrderRepository;
 import org.example.iw_order_service.security.SecurityService;
+import org.example.iw_order_service.service.kafka.OrderEventProducer;
 import org.springframework.stereotype.Service;
 
 import org.example.iw_order_service.entity.Order;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,19 +38,28 @@ public class OrderService {
     private final OrderItemMapper orderItemMapper;
     private final OrderMapper orderMapper;
     private final SecurityService securityService;
+    private final OrderEventProducer orderEventProducer;
     public OrderResponse createOrder(CreateOrderRequest request) {
         UserResponse userInfo = userServiceClient.getUserById(securityService.getCurrentUserId());
         Order order = new Order();
         order.setUserId(userInfo.getId());
+        BigDecimal totalAmount = BigDecimal.ZERO;
         for (OrderItemRequest itemRequest : request.getItems()) {
             Item item = itemRepository.findById(itemRequest.getItemId())
                     .orElseThrow(() -> new ItemNotFoundException("Item not found: " + itemRequest.getItemId()));
             OrderItem orderItem =orderItemMapper.toOrderItem(itemRequest, order, item);
             order.getOrderItems().add(orderItem);
+
+            totalAmount = totalAmount.add(item.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())));
         }
+
         order.setStatus(OrderStatus.PENDING);
         order.setCreationDate(LocalDateTime.now());
         order = orderRepository.save(order);
+
+        PaymentRequest paymentRequest = new PaymentRequest(order.getId(), order.getUserId(), totalAmount);
+        orderEventProducer.sendCreateOrderEvent(paymentRequest);
+
         return orderMapper.toOrderResponse(order,userInfo);
     }
 
@@ -96,6 +107,12 @@ public class OrderService {
         order.setStatus(newStatus);
         order = orderRepository.save(order);
         return orderMapper.toOrderResponse(order,userInfo);
+    }
+    public void updateOrderStatusInternal (UpdateOrderRequest request){
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new OrderNotFoundException("Order not found or access denied: " + request.getOrderId()));
+        order.setStatus(request.getStatus());
+        orderRepository.save(order);
     }
 
     public void deleteOrder(Long orderId) {

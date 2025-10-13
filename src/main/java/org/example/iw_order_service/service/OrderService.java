@@ -134,4 +134,11 @@ public class OrderService {
         orderRepository.delete(order);
     }
 
+    public List<OrderResponse> getAllOrders() {
+        var userId = securityService.getCurrentUserId();
+        UserResponse userInfo = userServiceClient.getUserById(userId);
+        return orderRepository.findAllByUserId(userId)
+                .map(order -> orderMapper.toOrderResponse(order, userInfo))
+                .collect(Collectors.toList());
+    }
 }

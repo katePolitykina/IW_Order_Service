@@ -33,6 +33,11 @@ public class OrderController {
         return orderService.getOrder(orderId);
     }
 
+    @GetMapping
+    public List<OrderResponse> getAllOrders() {
+        return orderService.getAllOrders();
+    }
+
     @GetMapping("/by-ids")
     public List<OrderResponse> getOrdersByIds(@RequestParam @Size(min = 1) List<@NotNull Long> orderIds)  {
         return orderService.getOrdersByIds(orderIds);
@@ -53,4 +58,5 @@ public class OrderController {
     public void deleteOrder(@PathVariable Long orderId) {
         orderService.deleteOrder(orderId);
     }
+
 }
